@@ -4,8 +4,6 @@ import superjson from 'superjson'
 import { z } from 'zod'
 import {
   getClawdbotClient,
-  isChatEvent,
-  isAgentEvent,
   parseEventFrame,
   sessionInfoToMonitor,
   type MonitorSession,

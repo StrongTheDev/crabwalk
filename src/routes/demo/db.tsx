@@ -9,7 +9,8 @@ export const Route = createFileRoute('/demo/db')({
 
 function DbDemo() {
   const [newTodo, setNewTodo] = useState('')
-  const todos = useLiveQuery(todosCollection)
+  const todosQuery = useLiveQuery(todosCollection)
+  const todos = todosQuery.data ?? []
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +41,9 @@ function DbDemo() {
     })
 
     tx.mutate(() => {
-      todosCollection.update(todo.id, { completed: !todo.completed })
+      todosCollection.update(todo.id, (draft) => {
+        draft.completed = !draft.completed
+      })
     })
 
     await tx.commit()

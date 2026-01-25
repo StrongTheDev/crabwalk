@@ -1,4 +1,4 @@
-import { createCollection } from '@tanstack/db'
+import { createCollection, localOnlyCollectionOptions } from '@tanstack/db'
 
 export interface Todo {
   id: string
@@ -7,7 +7,9 @@ export interface Todo {
   createdAt: number
 }
 
-export const todosCollection = createCollection<Todo>({
-  id: 'todos',
-  primaryKey: 'id',
-})
+export const todosCollection = createCollection(
+  localOnlyCollectionOptions<Todo>({
+    id: 'todos',
+    getKey: (item) => item.id,
+  })
+)

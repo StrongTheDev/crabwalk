@@ -7,10 +7,7 @@ import {
   sessionsCollection,
   actionsCollection,
   upsertSession,
-  addAction,
   clearCollections,
-  type MonitorSession,
-  type MonitorAction,
 } from '~/integrations/clawdbot'
 import {
   ActionGraph,
@@ -31,8 +28,11 @@ function MonitorPage() {
   const [selectedSession, setSelectedSession] = useState<string | null>(null)
 
   // Live queries from TanStack DB collections
-  const sessions = useLiveQuery(sessionsCollection)
-  const actions = useLiveQuery(actionsCollection)
+  const sessionsQuery = useLiveQuery(sessionsCollection)
+  const actionsQuery = useLiveQuery(actionsCollection)
+
+  const sessions = sessionsQuery.data ?? []
+  const actions = actionsQuery.data ?? []
 
   // Check connection status on mount
   useEffect(() => {

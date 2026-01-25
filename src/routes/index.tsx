@@ -7,7 +7,7 @@ export const Route = createFileRoute('/')({
 
 function Home() {
   return (
-    <div className="min-h-[calc(100vh-72px)] bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+    <div className="min-h-[calc(100vh-72px)] bg-linear-to-br from-gray-900 to-gray-800 flex items-center justify-center">
       <div className="text-center px-4">
         <Activity size={64} className="mx-auto mb-6 text-cyan-400" />
         <h1 className="text-5xl font-bold text-white mb-4">Crabwalk</h1>

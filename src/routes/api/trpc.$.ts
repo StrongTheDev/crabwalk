@@ -12,7 +12,6 @@ async function handler({ request }: { request: Request }) {
 }
 
 export const Route = createFileRoute('/api/trpc/$')({
-  // @ts-expect-error server property not in route types yet
   server: {
     handlers: {
       GET: handler,

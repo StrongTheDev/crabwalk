@@ -24,9 +24,10 @@ interface ActionGraphProps {
   onSessionSelect: (key: string | null) => void
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nodeTypes: NodeTypes = {
-  session: SessionNode,
-  action: ActionNode,
+  session: SessionNode as any,
+  action: ActionNode as any,
 }
 
 export function ActionGraph({
@@ -55,7 +56,7 @@ export function ActionGraph({
         id: `session-${session.key}`,
         type: 'session',
         position: { x: 0, y: 0 },
-        data: session,
+        data: session as unknown as Record<string, unknown>,
       })
     }
 
@@ -65,7 +66,7 @@ export function ActionGraph({
         id: `action-${action.id}`,
         type: 'action',
         position: { x: 0, y: 0 },
-        data: action,
+        data: action as unknown as Record<string, unknown>,
       })
     }
 
@@ -87,8 +88,8 @@ export function ActionGraph({
     // Connect session to first action of each run
     for (const [runId, runActs] of runActions) {
       const sorted = [...runActs].sort((a, b) => a.seq - b.seq)
-      if (sorted.length > 0) {
-        const first = sorted[0]
+      const first = sorted[0]
+      if (first) {
         const sessionId = `session-${first.sessionKey}`
         edges.push({
           id: `e-session-${runId}`,
@@ -98,20 +99,20 @@ export function ActionGraph({
           markerEnd: { type: MarkerType.ArrowClosed },
           style: { stroke: '#6b7280' },
         })
-      }
 
-      // Connect actions in sequence
-      for (let i = 1; i < sorted.length; i++) {
-        const prev = sorted[i - 1]
-        const curr = sorted[i]
-        edges.push({
-          id: `e-${prev.id}-${curr.id}`,
-          source: `action-${prev.id}`,
-          target: `action-${curr.id}`,
-          animated: curr.type === 'delta',
-          markerEnd: { type: MarkerType.ArrowClosed },
-          style: { stroke: '#6b7280' },
-        })
+        // Connect actions in sequence
+        for (let i = 1; i < sorted.length; i++) {
+          const prev = sorted[i - 1]!
+          const curr = sorted[i]!
+          edges.push({
+            id: `e-${prev.id}-${curr.id}`,
+            source: `action-${prev.id}`,
+            target: `action-${curr.id}`,
+            animated: curr.type === 'delta',
+            markerEnd: { type: MarkerType.ArrowClosed },
+            style: { stroke: '#6b7280' },
+          })
+        }
       }
     }
 
@@ -142,7 +143,7 @@ export function ActionGraph({
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
       if (node.type === 'session') {
-        const sessionKey = (node.data as MonitorSession).key
+        const sessionKey = (node.data as unknown as MonitorSession).key
         onSessionSelect(selectedSession === sessionKey ? null : sessionKey)
       }
     },
@@ -165,9 +166,9 @@ export function ActionGraph({
         proOptions={{ hideAttribution: true }}
       >
         <Background color="#374151" gap={20} />
-        <Controls className="!bg-gray-800 !border-gray-700 !rounded-lg" />
+        <Controls className="bg-gray-800! !border-gray-700! rounded-lg!" />
         <MiniMap
-          className="!bg-gray-800 !border-gray-700 !rounded-lg"
+          className="bg-gray-800! border-gray-700! rounded-lg!"
           nodeColor={(node) => {
             if (node.type === 'session') return '#06b6d4'
             return '#6b7280'

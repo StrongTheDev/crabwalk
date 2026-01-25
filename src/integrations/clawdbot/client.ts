@@ -67,7 +67,7 @@ export class ClawdbotClient {
   private handleMessage(
     msg: GatewayFrame | HelloOk,
     connectResolve?: (v: HelloOk) => void,
-    connectReject?: (e: Error) => void
+    _connectReject?: (e: Error) => void
   ) {
     if ('type' in msg) {
       switch (msg.type) {

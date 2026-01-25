@@ -1,21 +1,27 @@
-import { createCollection } from '@tanstack/db'
+import { createCollection, localOnlyCollectionOptions } from '@tanstack/db'
 import type { MonitorSession, MonitorAction } from './protocol'
 
-export const sessionsCollection = createCollection<MonitorSession>({
-  id: 'clawdbot-sessions',
-  primaryKey: 'key',
-})
+export const sessionsCollection = createCollection(
+  localOnlyCollectionOptions<MonitorSession>({
+    id: 'clawdbot-sessions',
+    getKey: (item) => item.key,
+  })
+)
 
-export const actionsCollection = createCollection<MonitorAction>({
-  id: 'clawdbot-actions',
-  primaryKey: 'id',
-})
+export const actionsCollection = createCollection(
+  localOnlyCollectionOptions<MonitorAction>({
+    id: 'clawdbot-actions',
+    getKey: (item) => item.id,
+  })
+)
 
 // Helper to update or insert session
 export function upsertSession(session: MonitorSession) {
   const existing = sessionsCollection.state.get(session.key)
   if (existing) {
-    sessionsCollection.update(session.key, session)
+    sessionsCollection.update(session.key, (draft) => {
+      Object.assign(draft, session)
+    })
   } else {
     sessionsCollection.insert(session)
   }
@@ -36,9 +42,9 @@ export function updateSessionStatus(
 ) {
   const session = sessionsCollection.state.get(key)
   if (session) {
-    sessionsCollection.update(key, {
-      status,
-      lastActivityAt: Date.now(),
+    sessionsCollection.update(key, (draft) => {
+      draft.status = status
+      draft.lastActivityAt = Date.now()
     })
   }
 }

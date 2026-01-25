@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Filter } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { StatusIndicator } from './StatusIndicator'
 import type { MonitorSession } from '~/integrations/clawdbot'
 

@@ -12,7 +12,8 @@ export const dbDevtoolsPlugin = {
 }
 
 function DbInspector() {
-  const todos = useLiveQuery(todosCollection)
+  const todosQuery = useLiveQuery(todosCollection)
+  const todos = todosQuery.data ?? []
   return (
     <div>
       <div className="text-xs text-gray-400 mb-1">todos ({todos.length})</div>

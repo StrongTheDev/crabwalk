@@ -1,11 +1,14 @@
 import { memo } from 'react'
-import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { Handle, Position } from '@xyflow/react'
 import { motion } from 'framer-motion'
-import { MessageSquare, Users, User } from 'lucide-react'
+import { Users, User } from 'lucide-react'
 import { StatusIndicator } from './StatusIndicator'
 import type { MonitorSession } from '~/integrations/clawdbot'
 
-type SessionNodeData = MonitorSession
+interface SessionNodeProps {
+  data: MonitorSession
+  selected?: boolean
+}
 
 const platformIcons: Record<string, string> = {
   whatsapp: '💬',
@@ -17,7 +20,7 @@ const platformIcons: Record<string, string> = {
 export const SessionNode = memo(function SessionNode({
   data,
   selected,
-}: NodeProps<SessionNodeData>) {
+}: SessionNodeProps) {
   const platformIcon = platformIcons[data.platform] ?? '📱'
 
   return (
@@ -31,7 +34,7 @@ export const SessionNode = memo(function SessionNode({
         ${data.status === 'thinking' ? 'border-yellow-500' : ''}
       `}
     >
-      <Handle type="target" position={Position.Top} className="!bg-gray-500" />
+      <Handle type="target" position={Position.Top} className="bg-gray-500!" />
 
       <div className="flex items-center gap-2 mb-2">
         <span className="text-lg">{platformIcon}</span>
@@ -52,7 +55,7 @@ export const SessionNode = memo(function SessionNode({
         {data.agentId}
       </div>
 
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-500" />
+      <Handle type="source" position={Position.Bottom} className="bg-gray-500!" />
     </motion.div>
   )
 })

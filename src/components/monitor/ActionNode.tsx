@@ -1,12 +1,23 @@
 import { memo, useState } from 'react'
-import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { Handle, Position } from '@xyflow/react'
 import { motion } from 'framer-motion'
 import { Loader2, CheckCircle, XCircle, Wrench, MessageSquare } from 'lucide-react'
 import type { MonitorAction } from '~/integrations/clawdbot'
 
-type ActionNodeData = MonitorAction
+interface ActionNodeProps {
+  data: MonitorAction
+  selected?: boolean
+}
 
-const typeConfig = {
+const typeConfig: Record<
+  MonitorAction['type'],
+  {
+    icon: typeof Loader2
+    color: string
+    iconColor: string
+    animate: boolean
+  }
+> = {
   delta: {
     icon: Loader2,
     color: 'border-blue-500 bg-blue-500/10',
@@ -48,7 +59,7 @@ const typeConfig = {
 export const ActionNode = memo(function ActionNode({
   data,
   selected,
-}: NodeProps<ActionNodeData>) {
+}: ActionNodeProps) {
   const [expanded, setExpanded] = useState(false)
   const config = typeConfig[data.type]
   const Icon = config.icon
@@ -71,7 +82,7 @@ export const ActionNode = memo(function ActionNode({
         ${selected ? 'ring-2 ring-white/50' : ''}
       `}
     >
-      <Handle type="target" position={Position.Top} className="!bg-gray-500 !w-2 !h-2" />
+      <Handle type="target" position={Position.Top} className="bg-gray-500! w-2! h-2!" />
 
       <div className="flex items-center gap-2 mb-1">
         <Icon
@@ -98,13 +109,13 @@ export const ActionNode = memo(function ActionNode({
         </div>
       )}
 
-      {expanded && data.toolArgs && (
+      {expanded && data.toolArgs != null && (
         <pre className="mt-2 text-[10px] text-gray-400 bg-black/30 p-1 rounded overflow-auto max-h-32">
-          {JSON.stringify(data.toolArgs, null, 2)}
+          {JSON.stringify(data.toolArgs, null, 2) as string}
         </pre>
       )}
 
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-500 !w-2 !h-2" />
+      <Handle type="source" position={Position.Bottom} className="bg-gray-500! w-2! h-2!" />
     </motion.div>
   )
 })

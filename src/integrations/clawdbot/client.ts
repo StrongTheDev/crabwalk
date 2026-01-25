@@ -36,28 +36,49 @@ export class ClawdbotClient {
 
   async connect(): Promise<HelloOk> {
     return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(this.url)
+      const timeout = setTimeout(() => {
+        this.ws?.close()
+        reject(new Error('Connection timeout - is clawdbot gateway running?'))
+      }, 10000)
 
-      this.ws.on('open', () => {
-        const params = createConnectParams(this.token)
-        this.ws!.send(JSON.stringify(params))
+      try {
+        this.ws = new WebSocket(this.url)
+      } catch (e) {
+        clearTimeout(timeout)
+        reject(new Error(`Failed to create WebSocket: ${e}`))
+        return
+      }
+
+      this.ws.once('open', () => {
+        // Defer to ensure readyState is actually OPEN
+        setImmediate(() => {
+          if (this.ws?.readyState === WebSocket.OPEN) {
+            const params = createConnectParams(this.token)
+            this.ws.send(JSON.stringify(params))
+          } else {
+            clearTimeout(timeout)
+            reject(new Error('WebSocket not ready after open event'))
+          }
+        })
       })
 
       this.ws.on('message', (data) => {
         try {
           const msg = JSON.parse(data.toString())
-          this.handleMessage(msg, resolve, reject)
+          this.handleMessage(msg, resolve, reject, timeout)
         } catch (e) {
           console.error('Failed to parse message:', e)
         }
       })
 
       this.ws.on('error', (err) => {
+        clearTimeout(timeout)
         console.error('WebSocket error:', err)
         reject(err)
       })
 
       this.ws.on('close', () => {
+        clearTimeout(timeout)
         this._connected = false
         this.scheduleReconnect()
       })
@@ -67,11 +88,13 @@ export class ClawdbotClient {
   private handleMessage(
     msg: GatewayFrame | HelloOk,
     connectResolve?: (v: HelloOk) => void,
-    _connectReject?: (e: Error) => void
+    _connectReject?: (e: Error) => void,
+    connectTimeout?: ReturnType<typeof setTimeout>
   ) {
     if ('type' in msg) {
       switch (msg.type) {
         case 'hello-ok':
+          if (connectTimeout) clearTimeout(connectTimeout)
           this._connected = true
           connectResolve?.(msg)
           break

@@ -1,15 +1,8 @@
-import React from 'react'
 import { HeadContent, Scripts, createRootRoute, Link } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { motion } from 'framer-motion'
 import appCss from '../styles.css?url'
 import { QueryProvider } from '../integrations/query/provider'
-import { queryDevtoolsPlugin } from '../integrations/query/devtools'
 import { CrabIdleAnimation } from '../components/ani'
-
-const devtoolsPlugins = [
-  queryDevtoolsPlugin,
-]
 
 export const Route = createRootRoute({
   head: () => ({
@@ -77,10 +70,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="bg-shell-950 text-gray-100">
         <QueryProvider>
           {children}
-          <TanStackRouterDevtools />
-          {devtoolsPlugins.map((plugin, i) => (
-            <React.Fragment key={i}>{plugin.render}</React.Fragment>
-          ))}
         </QueryProvider>
         <Scripts />
       </body>

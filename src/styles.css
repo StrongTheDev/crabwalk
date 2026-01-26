@@ -238,7 +238,7 @@ code, pre {
 }
 
 .panel-crab {
-  @apply bg-gradient-to-br from-shell-900 to-shell-950 border-2 border-crab-900/50 rounded-lg;
+  @apply bg-linear-to-br from-shell-900 to-shell-950 border-2 border-crab-900/50 rounded-lg;
   box-shadow:
     0 0 30px rgba(239, 68, 68, 0.1),
     0 4px 20px rgba(0, 0, 0, 0.4),

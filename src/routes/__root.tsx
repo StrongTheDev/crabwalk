@@ -6,12 +6,10 @@ import appCss from '../styles.css?url'
 import { Header } from '../components/Header'
 import { QueryProvider } from '../integrations/query/provider'
 import { queryDevtoolsPlugin } from '../integrations/query/devtools'
-import { dbDevtoolsPlugin } from '../integrations/db/devtools'
 import { CrabIdleAnimation } from '../components/ani'
 
 const devtoolsPlugins = [
   queryDevtoolsPlugin,
-  dbDevtoolsPlugin,
 ]
 
 export const Route = createRootRoute({

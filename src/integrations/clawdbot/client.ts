@@ -41,11 +41,9 @@ export class ClawdbotClient {
   }
 
   async connect(): Promise<HelloOk> {
-    if (this._connecting) {
-      throw new Error('Connection already in progress')
-    }
-    if (this._connected) {
-      throw new Error('Already connected')
+    if (this._connecting || this._connected) {
+      // Return a fake hello-ok if already connected/connecting
+      return { type: 'hello-ok', protocol: 3 } as HelloOk
     }
     this._connecting = true
     console.log('[clawdbot] Connecting to', this.url)
@@ -237,11 +235,13 @@ export class ClawdbotClient {
   }
 
   async listSessions(params?: SessionsListParams): Promise<SessionInfo[]> {
+    console.log('[clawdbot] listSessions params:', params)
     const result = await this.request<{ sessions: SessionInfo[] }>(
       'sessions.list',
       params
     )
-    return result.sessions
+    console.log('[clawdbot] listSessions result:', result?.sessions?.length ?? 0, 'sessions')
+    return result.sessions ?? []
   }
 
   disconnect() {

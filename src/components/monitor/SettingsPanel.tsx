@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, X, History, Wifi, WifiOff, RefreshCw, Terminal, Download, Trash2, Database, HardDrive, Play, Square } from 'lucide-react'
 
@@ -12,6 +11,8 @@ interface SettingsPanelProps {
   persistenceStartedAt: number | null
   persistenceSessionCount: number
   persistenceActionCount: number
+  open: boolean
+  onOpenChange: (open: boolean) => void
   onHistoricalModeChange: (enabled: boolean) => void
   onDebugModeChange: (enabled: boolean) => void
   onLogCollectionChange: (enabled: boolean) => void
@@ -35,6 +36,8 @@ export function SettingsPanel({
   persistenceStartedAt,
   persistenceSessionCount,
   persistenceActionCount,
+  open,
+  onOpenChange,
   onHistoricalModeChange,
   onDebugModeChange,
   onLogCollectionChange,
@@ -47,12 +50,11 @@ export function SettingsPanel({
   onPersistenceStop,
   onPersistenceClear,
 }: SettingsPanelProps) {
-  const [open, setOpen] = useState(false)
 
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => onOpenChange(true)}
         className="p-2 bg-shell-800 hover:bg-shell-700 rounded-lg transition-all group"
       >
         <Settings size={14} className="text-gray-400 group-hover:text-crab-400 transition-colors" />
@@ -66,7 +68,7 @@ export function SettingsPanel({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
+              onClick={() => onOpenChange(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
             />
 
@@ -87,7 +89,7 @@ export function SettingsPanel({
                   SETTINGS
                 </h2>
                 <button
-                  onClick={() => setOpen(false)}
+                  onClick={() => onOpenChange(false)}
                   className="p-2 hover:bg-shell-800 rounded-lg transition-all"
                 >
                   <X size={18} className="text-gray-400" />

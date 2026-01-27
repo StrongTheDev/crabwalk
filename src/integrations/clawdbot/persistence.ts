@@ -23,6 +23,10 @@ class PersistenceService {
     this.ensureDataDir()
     this.loadState()
     this.loadData()
+    // Auto-start by default if no state file exists
+    if (!this.enabled && !fs.existsSync(STATE_FILE)) {
+      this.start()
+    }
   }
 
   private ensureDataDir() {

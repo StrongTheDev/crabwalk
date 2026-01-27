@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useLiveQuery } from '@tanstack/react-db'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, HardDrive } from 'lucide-react'
 import { trpc } from '~/integrations/trpc/client'
 import {
   sessionsCollection,
@@ -76,6 +76,9 @@ function MonitorPage() {
 
   // Sidebar collapse state - default to collapsed
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
+
+  // Settings panel state
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Live queries from TanStack DB collections
   const sessionsQuery = useLiveQuery(sessionsCollection)
@@ -380,6 +383,25 @@ function MonitorPage() {
             </motion.div>
           )}
 
+          {/* Persistence indicator */}
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+              persistenceEnabled
+                ? 'bg-neon-mint/10 hover:bg-neon-mint/20'
+                : 'bg-shell-800/50 hover:bg-shell-700'
+            }`}
+            title={persistenceEnabled ? 'Background service running' : 'Background service stopped'}
+          >
+            <HardDrive
+              size={14}
+              className={persistenceEnabled ? 'text-neon-mint' : 'text-shell-500'}
+            />
+            {persistenceEnabled && (
+              <span className="w-1.5 h-1.5 rounded-full bg-neon-mint animate-pulse" />
+            )}
+          </button>
+
           {/* Stats display */}
           <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 bg-shell-800/50 rounded-lg">
             <div className="flex items-center gap-2">
@@ -403,6 +425,8 @@ function MonitorPage() {
             persistenceStartedAt={persistenceStartedAt}
             persistenceSessionCount={persistenceSessionCount}
             persistenceActionCount={persistenceActionCount}
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
             onHistoricalModeChange={handleHistoricalModeChange}
             onDebugModeChange={handleDebugModeChange}
             onLogCollectionChange={handleLogCollectionChange}

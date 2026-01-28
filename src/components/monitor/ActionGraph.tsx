@@ -15,16 +15,27 @@ import {
 import '@xyflow/react/dist/style.css'
 import { SessionNode } from './SessionNode'
 import { ActionNode } from './ActionNode'
+import { ExecNode } from './ExecNode'
 import { CrabNode } from './CrabNode'
 import { ChaserCrabNode, type ChaserCrabState } from './ChaserCrabNode'
 import { layoutGraph } from '~/lib/graph-layout'
-import type { MonitorSession, MonitorAction } from '~/integrations/clawdbot'
+import type {
+  MonitorSession,
+  MonitorAction,
+  MonitorExecProcess,
+} from '~/integrations/clawdbot'
 
 interface ActionGraphProps {
   sessions: MonitorSession[]
   actions: MonitorAction[]
+  execs: MonitorExecProcess[]
   selectedSession: string | null
   onSessionSelect: (key: string | null) => void
+}
+
+/** Cast domain data to ReactFlow's Node data type */
+function nodeData<T>(data: T): Record<string, unknown> {
+  return data as Record<string, unknown>
 }
 
 const CRAB_NODE_ID = 'crab-origin'
@@ -46,6 +57,7 @@ const SIDEWAYS_DRIFT = 0.4 // crabs scuttle sideways
 const nodeTypes: NodeTypes = {
   session: SessionNode as any,
   action: ActionNode as any,
+  exec: ExecNode as any,
   crab: CrabNode as any,
   chaserCrab: ChaserCrabNode as any,
 }
@@ -63,6 +75,7 @@ interface CrabAI {
 function ActionGraphInner({
   sessions,
   actions,
+  execs,
   selectedSession,
   onSessionSelect,
 }: ActionGraphProps) {
@@ -87,11 +100,17 @@ function ActionGraphInner({
     return actions.filter((a) => a.sessionKey === selectedSession)
   }, [actions, selectedSession])
 
+  const visibleExecs = useMemo(() => {
+    if (!selectedSession) return execs.slice(-50)
+    return execs.filter((exec) => exec.sessionKey === selectedSession)
+  }, [execs, selectedSession])
+
   // Build nodes
   const rawNodes = useMemo(() => {
     const nodes: Node[] = []
 
-    const hasActivity = sessions.length > 0 || visibleActions.length > 0
+    const hasActivity =
+      sessions.length > 0 || visibleActions.length > 0 || visibleExecs.length > 0
     nodes.push({
       id: CRAB_NODE_ID,
       type: 'crab',
@@ -108,7 +127,7 @@ function ActionGraphInner({
         id: `session-${session.key}`,
         type: 'session',
         position: { x: 0, y: 0 },
-        data: session as unknown as Record<string, unknown>,
+        data: nodeData(session),
       })
     }
 
@@ -117,12 +136,21 @@ function ActionGraphInner({
         id: `action-${action.id}`,
         type: 'action',
         position: { x: 0, y: 0 },
-        data: action as unknown as Record<string, unknown>,
+        data: nodeData(action),
+      })
+    }
+
+    for (const exec of visibleExecs) {
+      nodes.push({
+        id: `exec-${exec.id}`,
+        type: 'exec',
+        position: { x: 0, y: 0 },
+        data: nodeData(exec),
       })
     }
 
     return nodes
-  }, [sessions, visibleActions, selectedSession])
+  }, [sessions, visibleActions, visibleExecs, selectedSession])
 
   // Build edges
   const rawEdges = useMemo(() => {
@@ -132,18 +160,23 @@ function ActionGraphInner({
       ? sessions.filter((s) => s.key === selectedSession)
       : sessions
 
-    for (const session of visibleSessions) {
-      edges.push({
-        id: `e-crab-${session.key}`,
-        source: CRAB_NODE_ID,
-        target: `session-${session.key}`,
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' },
-        style: { stroke: '#ef4444', strokeWidth: 2 },
-      })
+    // Build a set of visible session keys for parent lookup
+    const visibleSessionKeys = new Set(visibleSessions.map((s) => s.key))
+
+    // Edge styles
+    const spawnEdgeStyle = {
+      animated: true,
+      style: { stroke: '#00ffd5', strokeWidth: 2, strokeDasharray: '8 4' },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#00ffd5' },
     }
 
-    const sessionNodeIds = new Set(visibleSessions.map((s) => `session-${s.key}`))
+    const crabEdgeStyle = {
+      animated: false,
+      style: { stroke: '#ef4444', strokeWidth: 2 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' },
+    }
 
+    // Group actions by session for spawn point lookup
     const sessionActions = new Map<string, MonitorAction[]>()
     for (const action of visibleActions) {
       const key = action.sessionKey
@@ -152,6 +185,39 @@ function ActionGraphInner({
       list.push(action)
       sessionActions.set(key, list)
     }
+    // Sort each session's actions by timestamp
+    for (const [key, actions] of sessionActions) {
+      sessionActions.set(key, [...actions].sort((a, b) => a.timestamp - b.timestamp))
+    }
+
+    // Connect sessions to their spawn sources
+    for (const session of visibleSessions) {
+      const parentSessionKey = session.spawnedBy
+
+      if (parentSessionKey && visibleSessionKeys.has(parentSessionKey)) {
+        // This session was spawned by another session
+        // Connect from parent's right handle to child's left handle (horizontal spawn)
+        edges.push({
+          id: `e-spawn-${session.key}`,
+          source: `session-${parentSessionKey}`,
+          target: `session-${session.key}`,
+          sourceHandle: 'spawn-source',
+          targetHandle: 'spawn-target',
+          type: 'smoothstep',
+          ...spawnEdgeStyle,
+        })
+      } else {
+        // Root session - connect from crab
+        edges.push({
+          id: `e-crab-${session.key}`,
+          source: CRAB_NODE_ID,
+          target: `session-${session.key}`,
+          ...crabEdgeStyle,
+        })
+      }
+    }
+
+    const sessionNodeIds = new Set(visibleSessions.map((s) => `session-${s.key}`))
 
     const getEdgeStyle = (action: MonitorAction) => {
       switch (action.type) {
@@ -194,8 +260,9 @@ function ActionGraphInner({
       }
     }
 
+    // Connect actions within each session (vertical flow)
     for (const [sessionKey, actions] of sessionActions) {
-      const sorted = [...actions].sort((a, b) => a.timestamp - b.timestamp)
+      const sorted = actions // Already sorted above
       const sessionId = `session-${sessionKey}`
 
       for (let i = 0; i < sorted.length; i++) {
@@ -203,6 +270,7 @@ function ActionGraphInner({
         const edgeStyle = getEdgeStyle(action)
 
         if (i === 0) {
+          // First action connects from session node
           if (sessionNodeIds.has(sessionId)) {
             edges.push({
               id: `e-session-${action.id}`,
@@ -212,6 +280,7 @@ function ActionGraphInner({
             })
           }
         } else {
+          // Subsequent actions connect from previous action
           const prev = sorted[i - 1]!
           edges.push({
             id: `e-${prev.id}-${action.id}`,
@@ -223,8 +292,47 @@ function ActionGraphInner({
       }
     }
 
+    const getExecEdgeStyle = (exec: MonitorExecProcess) => {
+      switch (exec.status) {
+        case 'running':
+          return {
+            animated: true,
+            style: { stroke: '#00ffd5', strokeDasharray: '4 4' },
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#00ffd5' },
+          }
+        case 'failed':
+          return {
+            animated: false,
+            style: { stroke: '#ef4444' },
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' },
+          }
+        case 'completed':
+        default:
+          return {
+            animated: false,
+            style: { stroke: '#98ffc8' },
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#98ffc8' },
+          }
+      }
+    }
+
+    // Connect execs to their session
+    for (const exec of visibleExecs) {
+      const key = exec.sessionKey
+      if (!key) continue
+      const sessionId = `session-${key}`
+      if (!sessionNodeIds.has(sessionId)) continue
+      const edgeStyle = getExecEdgeStyle(exec)
+      edges.push({
+        id: `e-session-exec-${exec.id}`,
+        source: sessionId,
+        target: `exec-${exec.id}`,
+        ...edgeStyle,
+      })
+    }
+
     return edges
-  }, [sessions, visibleActions, selectedSession])
+  }, [sessions, visibleActions, visibleExecs, selectedSession])
 
   // Apply layout
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
@@ -608,6 +716,12 @@ function ActionGraphInner({
             if (node.type === 'crab') return '#ef4444'
             if (node.type === 'chaserCrab') return '#ef4444'
             if (node.type === 'session') return '#98ffc8'
+            if (node.type === 'exec') {
+              const status = (node.data as unknown as MonitorExecProcess).status
+              if (status === 'running') return '#00ffd5'
+              if (status === 'failed') return '#ef4444'
+              return '#98ffc8'
+            }
             return '#52526e'
           }}
           maskColor="rgba(10, 10, 15, 0.8)"

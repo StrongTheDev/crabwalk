@@ -1,17 +1,20 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useLiveQuery } from '@tanstack/react-db'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, HardDrive } from 'lucide-react'
+import { ArrowLeft, Loader2, HardDrive, Trash2 } from 'lucide-react'
 import { trpc } from '~/integrations/trpc/client'
 import {
   sessionsCollection,
   actionsCollection,
+  execsCollection,
   upsertSession,
   addAction,
+  addExecEvent,
   updateSessionStatus,
   clearCollections,
   hydrateFromServer,
+  clearCompletedExecs,
 } from '~/integrations/clawdbot'
 import {
   ActionGraph,
@@ -83,9 +86,22 @@ function MonitorPage() {
   // Live queries from TanStack DB collections
   const sessionsQuery = useLiveQuery(sessionsCollection)
   const actionsQuery = useLiveQuery(actionsCollection)
+  const execsQuery = useLiveQuery(execsCollection)
 
   const sessions = sessionsQuery.data ?? []
   const actions = actionsQuery.data ?? []
+  const execs = execsQuery.data ?? []
+
+  // Count clearable items (completed/failed execs)
+  const completedCount = useMemo(() => {
+    return execs.filter(e => e.status === 'completed' || e.status === 'failed').length
+  }, [execs])
+
+  // Handler for clearing completed execs
+  const handleClearCompleted = useCallback(() => {
+    const count = clearCompletedExecs()
+    console.log(`[monitor] cleared ${count} completed execs`)
+  }, [])
 
 
   // Check connection status and persistence on mount
@@ -143,10 +159,12 @@ function MonitorPage() {
   const hydrateFromPersistence = async () => {
     try {
       const status = await trpc.clawdbot.persistenceStatus.query()
-      if (status.sessionCount > 0 || status.actionCount > 0) {
+      if (status.sessionCount > 0 || status.actionCount > 0 || status.execEventCount > 0) {
         const data = await trpc.clawdbot.persistenceHydrate.query()
-        hydrateFromServer(data.sessions, data.actions)
-        console.log(`[monitor] hydrated ${data.sessions.length} sessions, ${data.actions.length} actions`)
+        hydrateFromServer(data.sessions, data.actions, data.execEvents ?? [])
+        console.log(
+          `[monitor] hydrated ${data.sessions.length} sessions, ${data.actions.length} actions, ${(data.execEvents ?? []).length} exec events`
+        )
       }
       setPersistenceEnabled(status.enabled)
       setPersistenceStartedAt(status.startedAt)
@@ -331,6 +349,9 @@ function MonitorPage() {
         if (data.type === 'action' && data.action) {
           addAction(data.action)
         }
+        if (data.type === 'exec' && data.execEvent) {
+          addExecEvent(data.execEvent)
+        }
       },
       onError: (err) => {
         console.error('[monitor] subscription error:', err)
@@ -381,6 +402,23 @@ function MonitorPage() {
                 {retryCount > 0 ? `retrying (${retryCount}/${MAX_RETRIES})...` : 'connecting...'}
               </span>
             </motion.div>
+          )}
+
+          {/* Clear Completed button */}
+          {completedCount > 0 && (
+            <button
+              onClick={handleClearCompleted}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all bg-shell-800/50 hover:bg-crab-900/50 hover:border-crab-700/50 border border-transparent group"
+              title={`Clear ${completedCount} completed item${completedCount !== 1 ? 's' : ''}`}
+            >
+              <Trash2
+                size={14}
+                className="text-shell-400 group-hover:text-crab-400 transition-colors"
+              />
+              <span className="font-console text-xs text-shell-400 group-hover:text-crab-400 transition-colors">
+                {completedCount}
+              </span>
+            </button>
           )}
 
           {/* Persistence indicator */}
@@ -458,6 +496,7 @@ function MonitorPage() {
           <ActionGraph
             sessions={sessions}
             actions={actions}
+            execs={execs}
             selectedSession={selectedSession}
             onSessionSelect={setSelectedSession}
           />

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import { Github } from 'lucide-react'
+import { version } from '../../package.json'
 import { CrabIdleAnimation, CrabJumpAnimation, CrabAttackAnimation } from '~/components/ani'
 
 function XIcon({ size = 14, className }: { size?: number; className?: string }) {
@@ -165,7 +166,7 @@ function Home() {
           >
             <span className="w-2 h-2 rounded-full bg-neon-mint animate-pulse" />
             <span className="font-console font-bold text-[11px] uppercase text-shell-500">
-              system online • v1.0.1
+              system online • v{version}
             </span>
           </motion.div>
 

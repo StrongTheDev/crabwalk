@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, X, History, Wifi, WifiOff, RefreshCw, Terminal, Download, Trash2, Database, HardDrive, Play, Square } from 'lucide-react'
+import { version } from '../../../package.json'
 
 interface SettingsPanelProps {
   connected: boolean
@@ -322,7 +323,7 @@ export function SettingsPanel({
                 <div className="flex items-center justify-center gap-2 pt-4">
                   <span className="w-2 h-2 rounded-full bg-neon-mint animate-pulse" />
                   <span className="font-console text-[10px] text-shell-500">
-                    crabwalk v1.0.1
+                    crabwalk v{version}
                   </span>
                 </div>
               </div>

@@ -67,17 +67,6 @@ export function layoutGraph(
     .filter((n) => n.type === 'session')
     .map((n) => n.data as unknown as MonitorSession)
 
-  // Filter out orphan subagents:
-  // - Subagent sessions (by key) must have a valid parent in the list
-  // - Non-subagents are shown if they have no parent or a valid parent
-  const sessions = allSessions.filter(s => {
-    const isSubagent = s.key.includes('subagent')
-    if (isSubagent) {
-      return s.spawnedBy && allSessions.some(p => p.key === s.spawnedBy)
-    }
-    return !s.spawnedBy || allSessions.some(p => p.key === s.spawnedBy)
-  })
-
   const actions = nodes
     .filter((n) => n.type === 'action')
     .map((n) => ({ id: n.id.replace('action-', ''), data: n.data as unknown as MonitorAction }))
@@ -85,6 +74,17 @@ export function layoutGraph(
   const execs = nodes
     .filter((n) => n.type === 'exec')
     .map((n) => ({ id: n.id.replace('exec-', ''), data: n.data as unknown as MonitorExecProcess }))
+
+  // Filter out empty subagent sessions (no actions or execs attached)
+  const sessions = allSessions.filter(s => {
+    const isSubagent = s.key.includes('subagent')
+    if (isSubagent) {
+      const hasActions = actions.some(a => a.data.sessionKey === s.key)
+      const hasExecs = execs.some(e => e.data.sessionKey === s.key)
+      return hasActions || hasExecs
+    }
+    return true
+  })
 
   const crabNode = nodes.find((n) => n.type === 'crab')
 

@@ -1,6 +1,6 @@
 ---
 name: crabwalk
-version: 1.0.8
+version: 1.0.9
 description: Real-time companion monitor for OpenClaw agents
 homepage: https://crabwalk.app
 repository: https://github.com/luccast/crabwalk
@@ -25,7 +25,7 @@ VERSION=$(curl -s https://api.github.com/repos/luccast/crabwalk/releases/latest 
 crabwalk --version
 ```
 
-Should output version number (e.g., `1.0.8`).
+Should output version number (e.g., `1.0.9`).
 
 ## Step 3: Start
 

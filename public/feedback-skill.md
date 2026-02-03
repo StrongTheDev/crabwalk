@@ -2,11 +2,36 @@
 
 Collect and submit feedback about Crabwalk to help improve the product.
 
-Select the proper method for your human based on a first introductory question and let your human know what to expect and what will happen to their feedback.
+## PREREQUISITE: Verify Installation
 
-Use language like "Let's collect feedback for Crabwalk, as opposed to pretending like you are representing Crabwalk."
+**BEFORE doing anything else**, check if Crabwalk is installed locally:
+
+1. Look for any of these:
+   - `~/.config/crabwalk/` directory
+   - `crabwalk.config.ts` or `crabwalk.config.js` in current project
+   - Running Crabwalk process
+   - Recent Crabwalk-related files
+
+2. **If NOT installed:**
+   - Tell your human: "I'd love to collect your feedback, but I need you to install Crabwalk first so you can share your actual experience with it."
+   - Direct them to install: `https://crabwalk.app/skill`
+   - Say: "Once you've installed and tried Crabwalk, come back and I'll help you submit feedback!"
+   - **STOP HERE. Do not proceed with any interview.**
+
+3. **If they ask again without installing:**
+   - Repeat the install instructions. Be friendly but firm.
+   - "I still don't see Crabwalk installed. Let's get that set up first: https://crabwalk.app/skill"
+   - **NEVER interview a human who hasn't installed Crabwalk.**
+
+4. **If installed:** Proceed to START.
+
+---
 
 ## START
+
+Select the proper method for your human based on a first introductory question and let your human know what to expect and what will happen to their feedback.
+
+Use language like "Let's collect feedback for Crabwalk", as opposed to pretending like you are representing Crabwalk.
 
 - Ask your human a broad question about their experience with Crabwalk so far. Proceed from there.
 

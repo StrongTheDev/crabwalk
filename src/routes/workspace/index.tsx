@@ -369,11 +369,15 @@ function WorkspacePage() {
 
   // New file dialog state
   const [newFileDialogOpen, setNewFileDialogOpen] = useState(false)
+  const [newFileFolderPath, setNewFileFolderPath] = useState<string | null>(null)
 
   // Context menu state
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null)
   const [contextMenuFilePath, setContextMenuFilePath] = useState<string | null>(null)
+
+  // Clipboard feedback state
+  const [copyFeedback, setCopyFeedback] = useState<'idle' | 'copied' | 'failed'>('idle')
 
   // Handle save file with confirmation callback
   const handleSave = useCallback(
@@ -432,13 +436,20 @@ function WorkspacePage() {
     }
   }, [fileToDelete, workspacePath, selectedPath, handleRefresh])
 
-  // Handle create file
+  // Handle create file (uses newFileFolderPath if set)
   const handleCreateFile = useCallback(
     async (fileName: string, content: string) => {
       try {
+        // If creating in a subfolder, prepend the relative path
+        let finalFileName = fileName
+        if (newFileFolderPath && newFileFolderPath !== workspacePath) {
+          const relativePath = newFileFolderPath.replace(workspacePath + '/', '')
+          finalFileName = `${relativePath}/${fileName}`
+        }
+
         const result = await trpc.workspace.createFile.mutate({
           workspaceRoot: workspacePath,
-          fileName,
+          fileName: finalFileName,
           content,
         })
 
@@ -456,9 +467,11 @@ function WorkspacePage() {
       } catch (error) {
         console.error('Failed to create file:', error)
         throw error
+      } finally {
+        setNewFileFolderPath(null)
       }
     },
-    [workspacePath, loadFile, handleRefresh]
+    [workspacePath, newFileFolderPath, loadFile, handleRefresh]
   )
 
   // Handle context menu
@@ -473,6 +486,12 @@ function WorkspacePage() {
     []
   )
 
+  // Handle create file in folder (from + button in tree)
+  const handleCreateFileInFolder = useCallback((folderPath: string) => {
+    setNewFileFolderPath(folderPath)
+    setNewFileDialogOpen(true)
+  }, [])
+
   // Context menu items
   const contextMenuItems = useMemo(() => [
     {
@@ -486,13 +505,16 @@ function WorkspacePage() {
     },
     {
       icon: <CopyIcon size={14} />,
-      label: 'Copy Path',
+      label: copyFeedback === 'copied' ? 'Copied!' : copyFeedback === 'failed' ? 'Failed' : 'Copy Path',
       onClick: async () => {
         if (contextMenuFilePath) {
           try {
             await navigator.clipboard.writeText(contextMenuFilePath)
+            setCopyFeedback('copied')
+            setTimeout(() => setCopyFeedback('idle'), 2000)
           } catch {
-            console.warn('Failed to copy to clipboard')
+            setCopyFeedback('failed')
+            setTimeout(() => setCopyFeedback('idle'), 2000)
           }
         }
       },
@@ -508,8 +530,7 @@ function WorkspacePage() {
         }
       },
     },
-  ], [contextMenuFilePath, handleSelect])
-
+  ], [contextMenuFilePath, handleSelect, copyFeedback])
 
   return (
     <div className="h-screen flex flex-col bg-shell-950 text-white overflow-hidden">
@@ -659,7 +680,7 @@ function WorkspacePage() {
                     )
                   })}
                   {starredPaths.size > 5 && (
-                    <span className="text-[10px] text-shell-500">+{starredPaths.size - 5}</span>
+                    <span className="text-[11px] text-shell-500">+{starredPaths.size - 5}</span>
                   )}
                 </div>
               ) : (
@@ -681,7 +702,7 @@ function WorkspacePage() {
                       >
                         <FileText
                           size={14}
-                          className={`flex-shrink-0 ${
+                          className={`shrink-0 ${
                             ext === '.md' ? 'text-crab-400' : 'text-shell-500'
                           }`}
                         />
@@ -693,7 +714,7 @@ function WorkspacePage() {
                             e.stopPropagation()
                             handleStar(filePath)
                           }}
-                          className="text-yellow-400 hover:text-yellow-300 flex-shrink-0"
+                          className="text-yellow-400 hover:text-yellow-300 shrink-0"
                           title="Unstar file"
                         >
                           <Star size={14} fill="currentColor" />
@@ -716,6 +737,7 @@ function WorkspacePage() {
                    onSelect={handleSelect}
                    onLoadDirectory={handleLoadDirectory}
                    onContextMenu={handleContextMenu}
+                   onCreateFile={handleCreateFileInFolder}
                  />
                ) : (
                 <div className="p-4 text-center">
@@ -730,7 +752,7 @@ function WorkspacePage() {
            {/* Sidebar footer */}
           {pathValid && !sidebarCollapsed && (
             <div className="px-4 py-2 border-t border-shell-800">
-              <p className="font-console text-[10px] text-shell-600 truncate">
+              <p className="font-console text-[11px] text-shell-600 truncate">
                 {workspacePath}
               </p>
             </div>
@@ -810,8 +832,12 @@ function WorkspacePage() {
       {/* New file dialog */}
       <NewFileDialog
         open={newFileDialogOpen}
-        onClose={() => setNewFileDialogOpen(false)}
+        onClose={() => {
+          setNewFileDialogOpen(false)
+          setNewFileFolderPath(null)
+        }}
         onCreate={handleCreateFile}
+        folderPath={newFileFolderPath ?? undefined}
       />
 
       {/* Context menu */}

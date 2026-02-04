@@ -202,80 +202,30 @@ export function FileEditor({
     <div className="h-full flex flex-col">
       {/* File header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-shell-800 bg-shell-900/50 min-w-0">
-        {/* Left: Controls - always visible, fixed width */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Star button */}
+        {/* Left: Star button */}
+        <div className="flex items-center gap-2 shrink-0">
           {filePath && onStar && (
             <button
               onClick={() => onStar(filePath)}
-              className={`p-1.5 rounded transition-colors ${
-                isStarred
+              className={`p-1.5 rounded transition-colors ${isStarred
                   ? 'text-yellow-400 hover:text-yellow-300'
                   : 'text-shell-600 hover:text-yellow-400'
-              }`}
+                }`}
               title={isStarred ? 'Unstar file' : 'Star file'}
             >
               <Star size={16} fill={isStarred ? 'currentColor' : 'none'} />
             </button>
           )}
-
-          {/* Action buttons */}
-          {onSave && (
-            <div className="flex items-center gap-1">
-              {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-shell-800 hover:bg-shell-700 rounded-lg text-sm font-console text-gray-300 transition-colors border border-shell-700"
-                  title="Edit file (or press E)"
-                >
-                  <Edit2 size={14} />
-                  <span className="hidden sm:inline">Edit</span>
-                </button>
-              ) : (
-                <>
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving || !hasUnsavedChanges}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-neon-mint/10 hover:bg-neon-mint/20 rounded-lg text-sm font-console text-neon-mint transition-colors border border-neon-mint/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Save (Ctrl+S)"
-                  >
-                    <Save size={14} />
-                    <span className="hidden sm:inline">Save</span>
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-shell-800 hover:bg-shell-700 rounded-lg text-sm font-console text-gray-300 transition-colors border border-shell-700"
-                    title="Cancel (Esc)"
-                  >
-                    <X size={14} />
-                    <span className="hidden sm:inline">Cancel</span>
-                  </button>
-                </>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Middle: Filename and indicators - flexes and truncates */}
         <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
-          <FileText size={18} className={`flex-shrink-0 ${isMarkdown ? 'text-crab-400' : 'text-shell-500'}`} />
+          <FileText size={18} className={`shrink-0 ${isMarkdown ? 'text-crab-400' : 'text-shell-500'}`} />
           <h2 className="font-display text-sm text-gray-200 truncate min-w-0">{fileName}</h2>
-          {isMarkdown && (
-            <span className="hidden sm:inline px-2 py-0.5 bg-crab-900/30 text-crab-400 text-[10px] font-console uppercase rounded border border-crab-700/30 flex-shrink-0">
-              Markdown
-            </span>
-          )}
-          
-          {/* Edit mode indicator */}
-          {isEditing && (
-            <span className="hidden sm:inline px-2 py-0.5 bg-neon-mint/10 text-neon-mint text-[10px] font-console uppercase rounded border border-neon-mint/30 flex-shrink-0">
-              Editing
-            </span>
-          )}
-          
+
           {/* Unsaved changes indicator */}
           {isEditing && hasUnsavedChanges && (
-            <span className="hidden sm:inline px-2 py-0.5 bg-neon-peach/10 text-neon-peach text-[10px] font-console uppercase rounded border border-neon-peach/30 animate-pulse flex-shrink-0">
+            <span className="hidden sm:inline px-2 py-0.5 bg-neon-peach/10 text-neon-peach text-[11px] font-console uppercase rounded border border-neon-peach/30 animate-pulse shrink-0">
               Unsaved
             </span>
           )}
@@ -287,24 +237,24 @@ export function FileEditor({
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="hidden sm:flex items-center gap-1.5 flex-shrink-0"
+                className="hidden sm:flex items-center gap-1.5 shrink-0"
               >
                 {saveStatus === 'saving' && (
                   <>
                     <div className="w-2.5 h-2.5 border-2 border-neon-cyan border-t-transparent rounded-full animate-spin" />
-                    <span className="font-console text-[10px] text-neon-cyan">Saving...</span>
+                    <span className="font-console text-[11px] text-neon-cyan">Saving...</span>
                   </>
                 )}
                 {saveStatus === 'saved' && (
                   <>
                     <Check size={12} className="text-neon-mint" />
-                    <span className="font-console text-[10px] text-neon-mint">Saved</span>
+                    <span className="font-console text-[11px] text-neon-mint">Saved</span>
                   </>
                 )}
                 {saveStatus === 'error' && (
                   <>
                     <AlertCircle size={12} className="text-neon-peach" />
-                    <span className="font-console text-[10px] text-neon-peach">Save failed</span>
+                    <span className="font-console text-[11px] text-neon-peach">Save failed</span>
                   </>
                 )}
               </motion.div>
@@ -312,20 +262,58 @@ export function FileEditor({
           </AnimatePresence>
         </div>
 
-        {/* Right: Metadata - shows when space allows, hides on very small screens */}
-        <div className="flex items-center gap-3 flex-shrink-0 overflow-hidden">
+        {/* Right: Metadata + Action buttons */}
+        <div className="flex items-center gap-3 shrink-0 overflow-hidden">
           <div className="hidden min-[480px]:flex items-center gap-3">
             {fileSize !== undefined && (
-              <span className="font-console text-[10px] text-shell-500 whitespace-nowrap">
+              <span className="font-console text-[11px] text-shell-500 whitespace-nowrap">
                 {formatFileSize(fileSize)}
               </span>
             )}
             {fileModified && (
-              <span className="font-console text-[10px] text-shell-500 whitespace-nowrap">
+              <span className="font-console text-[11px] text-shell-500 whitespace-nowrap">
                 {formatModifiedDate(fileModified)}
               </span>
             )}
           </div>
+
+          {/* Action buttons */}
+          {onSave && (
+            <div className="flex items-center gap-2">
+              {!isEditing ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-shell-800 hover:bg-shell-700 rounded-lg text-sm font-console text-gray-300 transition-colors border border-shell-700"
+                  title="Edit file (or press E)"
+                >
+                  <Edit2 size={14} />
+                  <span className="hidden lg:inline">Edit</span>
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleCancel}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-shell-800 hover:bg-shell-700 rounded-lg text-sm font-console text-gray-300 transition-colors border border-shell-700"
+                    title="Cancel (Esc)"
+                  >
+                    <X size={14} />
+                    <span className="hidden sm:inline">Cancel</span>
+                  </button>
+                  {hasUnsavedChanges && (
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-neon-mint/10 hover:bg-neon-mint/20 rounded-lg text-sm font-console text-neon-mint transition-colors border border-neon-mint/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Save (Ctrl+S)"
+                    >
+                      <Save size={14} />
+                      <span className="hidden sm:inline">Save</span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -346,7 +334,7 @@ export function FileEditor({
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full h-full min-h-[400px] bg-shell-900 border border-shell-700 rounded-lg p-4 font-mono text-sm text-gray-300 placeholder-shell-600 resize-none focus:outline-none focus:border-crab-500 focus:ring-1 focus:ring-crab-500/20 break-words"
+                  className="w-full h-full min-h-[400px] bg-shell-900 border border-shell-700 rounded-lg p-4 font-mono text-sm font-light text-gray-300 placeholder-shell-600 resize-none focus:outline-none focus:border-crab-500 focus:ring-1 focus:ring-crab-500/20 wrap-break-words"
                   spellCheck={false}
                   autoCapitalize="off"
                   autoCorrect="off"
@@ -363,7 +351,7 @@ export function FileEditor({
                 className="min-w-0"
               >
                 {isMarkdown ? (
-                  <div className="prose prose-invert prose-sm max-w-full break-words">
+                  <div className="prose prose-invert prose-sm max-w-full wrap-break-words">
                     <ReactMarkdown
                       components={{
                         h1: ({ children }) => (

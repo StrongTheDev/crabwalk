@@ -2,7 +2,10 @@ import { initTRPC } from '@trpc/server'
 import { observable } from '@trpc/server/observable'
 import superjson from 'superjson'
 import { z } from 'zod'
-import { getClawdbotClient } from '~/integrations/openclaw/client'
+import {
+  getClawdbotClient,
+  getClawdbotEndpoint,
+} from '~/integrations/openclaw/client'
 import { getPersistenceService } from '~/integrations/openclaw/persistence'
 import {
   parseEventFrame,
@@ -72,6 +75,10 @@ const openclawRouter = router({
     return { connected: client.connected }
   }),
 
+  gatewayEndpoint: publicProcedure.query(() => {
+    return { url: getClawdbotEndpoint() }
+  }),
+
   setDebugMode: publicProcedure
     .input(z.object({ enabled: z.boolean() }))
     .mutation(({ input }) => {
@@ -92,7 +99,9 @@ const openclawRouter = router({
       if (input.enabled) {
         console.log(`[openclaw] log collection started`)
       } else {
-        console.log(`[openclaw] log collection stopped, ${collectedEvents.length} events collected`)
+        console.log(
+          `[openclaw] log collection stopped, ${collectedEvents.length} events collected`,
+        )
       }
       return { collectLogs, eventCount: collectedEvents.length }
     }),
@@ -124,7 +133,7 @@ const openclawRouter = router({
           activeMinutes: z.number().optional(),
           agentId: z.string().optional(),
         })
-        .optional()
+        .optional(),
     )
     .query(async ({ input }) => {
       const client = getClawdbotClient()
@@ -143,7 +152,8 @@ const openclawRouter = router({
       } catch (error) {
         return {
           sessions: [],
-          error: error instanceof Error ? error.message : 'Failed to list sessions',
+          error:
+            error instanceof Error ? error.message : 'Failed to list sessions',
         }
       }
     }),
@@ -175,10 +185,23 @@ const openclawRouter = router({
         const parsed = parseEventFrame(event)
         if (parsed) {
           if (debugMode && parsed.action) {
-            console.log('[DEBUG] Parsed action:', parsed.action.type, parsed.action.eventType, 'sessionKey:', parsed.action.sessionKey)
+            console.log(
+              '[DEBUG] Parsed action:',
+              parsed.action.type,
+              parsed.action.eventType,
+              'sessionKey:',
+              parsed.action.sessionKey,
+            )
           }
           if (debugMode && parsed.execEvent) {
-            console.log('[DEBUG] Parsed exec:', parsed.execEvent.eventType, 'runId:', parsed.execEvent.runId, 'pid:', parsed.execEvent.pid)
+            console.log(
+              '[DEBUG] Parsed exec:',
+              parsed.execEvent.eventType,
+              'runId:',
+              parsed.execEvent.runId,
+              'pid:',
+              parsed.execEvent.pid,
+            )
           }
           if (parsed.session) {
             emit.next({ type: 'session', session: parsed.session })
@@ -231,9 +254,14 @@ const openclawRouter = router({
 // Workspace router for file system operations
 const workspaceRouter = router({
   // Validate workspace path exists
-  validatePath: publicProcedure
-    .input(z.object({ path: z.string() }))
-    .query(async ({ input }): Promise<{ valid: boolean; error?: string; expandedPath?: string }> => {
+  validatePath: publicProcedure.input(z.object({ path: z.string() })).query(
+    async ({
+      input,
+    }): Promise<{
+      valid: boolean
+      error?: string
+      expandedPath?: string
+    }> => {
       try {
         const expandedPath = expandTilde(input.path)
         const exists = await pathExists(expandedPath)
@@ -247,7 +275,8 @@ const workspaceRouter = router({
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    }),
+    },
+  ),
 
   // Get default workspace path
   getDefaultPath: publicProcedure.query((): { path: string } => {
@@ -257,19 +286,26 @@ const workspaceRouter = router({
   // List directory contents
   listDirectory: publicProcedure
     .input(z.object({ workspaceRoot: z.string(), path: z.string() }))
-    .query(async ({ input }): Promise<{ entries: DirectoryEntry[]; error?: string }> => {
-      try {
-        const expandedRoot = expandTilde(input.workspaceRoot)
-        const expandedPath = expandTilde(input.path)
-        const entries = await listDirectory(expandedRoot, expandedPath)
-        return { entries }
-      } catch (error) {
-        return {
-          entries: [],
-          error: error instanceof Error ? error.message : 'Failed to list directory',
+    .query(
+      async ({
+        input,
+      }): Promise<{ entries: DirectoryEntry[]; error?: string }> => {
+        try {
+          const expandedRoot = expandTilde(input.workspaceRoot)
+          const expandedPath = expandTilde(input.path)
+          const entries = await listDirectory(expandedRoot, expandedPath)
+          return { entries }
+        } catch (error) {
+          return {
+            entries: [],
+            error:
+              error instanceof Error
+                ? error.message
+                : 'Failed to list directory',
+          }
         }
-      }
-    }),
+      },
+    ),
 
   // Read file contents
   readFile: publicProcedure
@@ -292,56 +328,79 @@ const workspaceRouter = router({
 
   // Write file contents
   writeFile: publicProcedure
-    .input(z.object({ workspaceRoot: z.string(), path: z.string(), content: z.string() }))
-    .mutation(async ({ input }): Promise<{ success: boolean; error?: string }> => {
-      try {
-        const expandedRoot = expandTilde(input.workspaceRoot)
-        const expandedPath = expandTilde(input.path)
-        await writeFile(expandedRoot, expandedPath, input.content)
-        return { success: true }
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Failed to write file',
+    .input(
+      z.object({
+        workspaceRoot: z.string(),
+        path: z.string(),
+        content: z.string(),
+      }),
+    )
+    .mutation(
+      async ({ input }): Promise<{ success: boolean; error?: string }> => {
+        try {
+          const expandedRoot = expandTilde(input.workspaceRoot)
+          const expandedPath = expandTilde(input.path)
+          await writeFile(expandedRoot, expandedPath, input.content)
+          return { success: true }
+        } catch (error) {
+          return {
+            success: false,
+            error:
+              error instanceof Error ? error.message : 'Failed to write file',
+          }
         }
-      }
-    }),
+      },
+    ),
 
   // Delete file
   deleteFile: publicProcedure
     .input(z.object({ workspaceRoot: z.string(), path: z.string() }))
-    .mutation(async ({ input }): Promise<{ success: boolean; error?: string }> => {
-      try {
-        const expandedRoot = expandTilde(input.workspaceRoot)
-        const expandedPath = expandTilde(input.path)
-        await deleteFile(expandedRoot, expandedPath)
-        return { success: true }
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Failed to delete file',
+    .mutation(
+      async ({ input }): Promise<{ success: boolean; error?: string }> => {
+        try {
+          const expandedRoot = expandTilde(input.workspaceRoot)
+          const expandedPath = expandTilde(input.path)
+          await deleteFile(expandedRoot, expandedPath)
+          return { success: true }
+        } catch (error) {
+          return {
+            success: false,
+            error:
+              error instanceof Error ? error.message : 'Failed to delete file',
+          }
         }
-      }
-    }),
+      },
+    ),
 
   // Create file
   createFile: publicProcedure
-    .input(z.object({ workspaceRoot: z.string(), fileName: z.string(), content: z.string().optional() }))
-    .mutation(async ({ input }): Promise<{ success: boolean; error?: string; filePath?: string }> => {
-      try {
-        const expandedRoot = expandTilde(input.workspaceRoot)
-        // Construct path server-side using Node.js path.join
-        const path = await import('path')
-        const fullPath = path.join(expandedRoot, input.fileName)
-        await createFile(expandedRoot, fullPath, input.content || '')
-        return { success: true, filePath: fullPath }
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Failed to create file',
+    .input(
+      z.object({
+        workspaceRoot: z.string(),
+        fileName: z.string(),
+        content: z.string().optional(),
+      }),
+    )
+    .mutation(
+      async ({
+        input,
+      }): Promise<{ success: boolean; error?: string; filePath?: string }> => {
+        try {
+          const expandedRoot = expandTilde(input.workspaceRoot)
+          // Construct path server-side using Node.js path.join
+          const path = await import('path')
+          const fullPath = path.join(expandedRoot, input.fileName)
+          await createFile(expandedRoot, fullPath, input.content || '')
+          return { success: true, filePath: fullPath }
+        } catch (error) {
+          return {
+            success: false,
+            error:
+              error instanceof Error ? error.message : 'Failed to create file',
+          }
         }
-      }
-    }),
+      },
+    ),
 })
 
 export const appRouter = router({

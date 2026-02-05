@@ -13,6 +13,7 @@ interface SettingsPanelProps {
   persistenceSessionCount: number
   persistenceActionCount: number
   open: boolean
+  gatewayEndpoint: string
   onOpenChange: (open: boolean) => void
   onHistoricalModeChange: (enabled: boolean) => void
   onDebugModeChange: (enabled: boolean) => void
@@ -33,6 +34,7 @@ export function SettingsPanel({
   debugMode,
   logCollection,
   logCount,
+  gatewayEndpoint,
   persistenceEnabled,
   persistenceStartedAt,
   persistenceSessionCount,
